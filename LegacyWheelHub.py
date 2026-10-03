@@ -658,8 +658,24 @@ DEVICE_PROFILES = {
                  "axis": "14-bit (16,384 Steps)", "ffb": "Dual-Motor, Helical Gear",
                  "polling": "~500 Hz", "api": "Direct HID RAW"},
     },
+    "G25": {
+        "name": "Logitech G25 Racing Wheel", "pid_native": 0xC299,
+        "registry_pids": ["VID_046D&PID_C299", "VID_046D&PID_C294"],
+        "steer": {"fmt": "hilo6", "lo": 3, "hi": 4, "center": 8192, "half": 8192},
+        "throttle": 5, "brake": 6, "clutch": 11, "pedal_invert": True,
+        "info": {"model": "Logitech G25 Racing Wheel", "hwid": "USB\\VID_046D & PID_C299",
+                 "interface": "USB 2.0 (Full-Speed)", "power": "24V DC",
+                 "tracking": "High-Resolution Optical Encoder",
+                 "axis": "14-bit (16,384 Steps)", "ffb": "Dual-Motor, Helical Gear",
+                 "polling": "~500 Hz", "api": "Direct HID RAW"},
+    },
 }
 PID_COMPAT = 0xC294
+# G25 and G27 share the same button/shifter/clutch report layout (G27 is a
+# superset that just adds 4 "red" buttons and RPM LEDs on top), so anywhere
+# the UI branches on "is this the G27-style wheel" G25 belongs on the same
+# side as G27, not DFGT.
+G27_LIKE_PROFILES = (DEVICE_PROFILES["G27"], DEVICE_PROFILES["G25"])
 
 # Derived from DEVICE_PROFILES so the two can never drift apart.
 ALL_REGISTRY_PIDS = sorted({p for v in DEVICE_PROFILES.values() for p in v["registry_pids"]})
@@ -1015,8 +1031,238 @@ LANG = {
         "info.opmode_active": "Nativer Erweiterter Modus (Entsperrt)", "info.opmode_idle": "Leerlauf / Getrennt",
         "info.active": "Aktiv", "info.standby": "Standby",
     },
+    "uk": {
+        "nav.home": "Головна", "nav.wheel": "Налаштування керма", "nav.ffb": "Тест FFB",
+        "nav.input": "Монітор вводу", "nav.apply": "Застосувати налаштування",
+        "nav.theme": "Змінити тему", "nav.about": "Про програму",
+        "conn.connecting": "Підключення…", "conn.not_connected": "Не підключено",
+        "home.title": "Телеметрія в реальному часі", "home.steering": "КУТ ПОВОРОТУ",
+        "home.clutch": "ЗЧЕПЛЕННЯ", "home.brake": "ГАЛЬМО", "home.throttle": "ГАЗ",
+        "home.center": "Центрувати кермо", "home.na": "Н/Д",
+        "prof.label": "ПРОФІЛЬ", "prof.auto": "Авто-завантаження", "prof.add": "Новий профіль",
+        "prof.dup": "Дублювати профіль", "prof.ren": "Перейменувати профіль",
+        "prof.del": "Видалити профіль", "prof.new_title": "Новий профіль",
+        "prof.new_hint": "Назва профілю", "prof.ren_title": "Перейменування профілю",
+        "prof.del_title": "Видалення профілю", "prof.del_msg": "Видалити профіль “{0}”? Це неможливо скасувати.",
+        "ffb.reset_ok": "FFB драйвера скинуто", "ffb.reset_ok_body": "Усі значення реєстру FFB, записані цією програмою, видалено.",
+        "prof.name_taken": "Назва вже використовується", "prof.name_taken_body": "Профіль із назвою “{0}” вже існує, тому назву залишено без змін.",
+        "input.mode_numbers": "Показувати номери кнопок", "input.mode_names": "Показувати назви кнопок",
+        "ui.autogame": "Автоперемикання за грою", "ui.autogame_h": "Застосовує профіль, чий .exe гри запущено. Якщо жоден не запущено — використовується Глобальний.", "game.detected": "Гру виявлено", "game.detected_body": "Застосовано пресет {0}.",
+        "set.startup": "Запускати разом із Windows", "set.startup_h": "Запускає програму під час входу в систему. За замовчуванням вимкнено.",
+        "set.updates_sec": "ОНОВЛЕННЯ", "set.updates": "Перевіряти оновлення під час запуску", "set.updates_h": "Перевіряє GitHub раз на день. Нічого не встановлюється автоматично.",
+        "set.check_now": "Перевірити зараз", "set.checking": "Перевірка…",
+        "upd.available": "Доступне оновлення", "upd.available_body": "Доступна версія {0}.", "upd.open": "Завантажити",
+        "upd.current": "Останню версію встановлено", "upd.current_body": "У вас найновіша версія.",
+        "upd.failed": "Не вдалося перевірити оновлення", "upd.failed_body": "Не вдалося з’єднатися з GitHub. Перевірте підключення та спробуйте ще раз.",
+        "prof.copy_suffix": " Копія", "dlg.ok": "ОК", "dlg.cancel": "Скасувати", "dlg.delete": "Видалити",
+        "wheel.title": "Налаштування керма", "wheel.ffb": "Зворотний зв’язок (FFB)",
+        "wheel.overall": "Загальна сила ефектів",
+        "wheel.overall_h": "Встановіть 101%, щоб прибрати мертву зону FFB у центрі в більшості ігор. (Потрібен перезапуск гри)",
+        "wheel.spring": "Ефект пружини", "wheel.spring_h": "Пружина на рівні драйвера (рекомендовано: 0%).",
+        "wheel.damper": "Ефект демпфера", "wheel.damper_h": "Демпфування на рівні драйвера (рекомендовано: 0%).",
+        "wheel.center_cb": "Увімкнути пружину центрування в іграх із FFB",
+        "wheel.center": "Пружина центрування", "wheel.center_h": "Сила автоцентрування на рівні драйвера.",
+        "wheel.ramp": "Наростання центрування", "wheel.ramp_h": "Формує лише пружину центрування — не діє, поки вона дорівнює 0. За замовчуванням 7.",
+        "wheel.steering": "Кермо", "wheel.rotation": "Діапазон повороту",
+        "wheel.rotation_h": "Максимальний кут повороту керма.",
+        "ffb.title": "ТЕСТ ЗВОРОТНОГО ЗВ’ЯЗКУ",
+        "ffb.subtitle": "Перевірте мотор FFB напряму. Бажано робити це, коли жодна гра не використовує кермо.",
+        "ffb.strength": "Сила тесту", "ffb.strength_h": "Сила, яка використовується в тестах Push, Spring і Sweep.",
+        "ffb.push_l": "Штовхнути вліво", "ffb.push_r": "Штовхнути вправо",
+        "ffb.spring": "Пружина (центр)", "ffb.spring_stop": "Зупинити пружину",
+        "ffb.sweep": "Автоцикл", "ffb.sweep_stop": "Зупинити цикл",
+        "ffb.advanced": "РОЗШИРЕНІ ТЕСТИ МОТОРА",
+        "ffb.pulse_l": "Імпульс вліво", "ffb.pulse_r": "Імпульс вправо",
+        "ffb.vibe_light": "Легка вібрація", "ffb.vibe_med": "Середня вібрація",
+        "ffb.vibe_fast": "Швидке торохтіння", "ffb.vibe_heavy": "Сильна вібрація",
+        "ffb.stop": "ЗУПИНИТИ ВСІ СИЛИ",
+        "input.title": "Монітор вводу", "input.led": "Тест привітання LED",
+        "input.wheel": "КЕРМО", "input.shifter": "БЛОК ПЕРЕМИКАННЯ ПЕРЕДАЧ", "input.gear": "ПЕРЕДАЧА (H-СХЕМА)",
+        "input.lpad": "ЛІВИЙ ПІДРУЛЬОВИЙ ПЕРЕМИКАЧ", "input.rpad": "ПРАВИЙ ПІДРУЛЬОВИЙ ПЕРЕМИКАЧ",
+        "input.face": "ОСНОВНІ КНОПКИ", "input.dpad": "ХРЕСТОВИНА", "input.horn": "СИГНАЛ",
+        "input.led_nc": "Кермо не підключено.",
+        "input.led_g27": "Тест LED доступний лише для G27 (у DFGT немає LED обертів).",
+        "input.led_run": "Привітання LED… (працює, якщо драйвер передає цей звіт)",
+        "about.title": "Інформація про пристрій", "about.settings": "Налаштування",
+        "about.status": "Статус", "about.connected": "Підключено", "about.not_connected": "Не підключено",
+        "about.model": "Модель", "about.hwid": "Апаратний ID", "about.axis": "Роздільна здатність осей",
+        "about.ffb": "Зворотний зв’язок", "about.language": "Мова", "about.theme": "Тема",
+        "about.theme_dark": "Темна", "about.theme_light": "Світла",
+        "about.testmode": "Режим тестового пристрою", "about.testmode_h":
+            "Перемикає розкладку активного керма без підключеного обладнання. “Авто” використовує реальне визначення.",
+        "about.test_auto": "Авто (визначення)", "about.footer":
+            "Legacy Logitech Wheels - Control Hub (PySide6 / Fluent)",
+        "about.sec_hw": "ДІАГНОСТИКА ОБЛАДНАННЯ", "about.sec_sensor": "ХАРАКТЕРИСТИКИ ДАТЧИКІВ ТА FFB",
+        "about.sec_sw": "СТАН ПЗ ТА ДРАЙВЕРА", "about.sec_credits": "ПОДЯКИ",
+        "about.devmodel": "Модель пристрою", "about.interface": "Інтерфейс", "about.power": "Стан живлення",
+        "about.tracking": "Система відстеження", "about.polling": "Макс. частота опитування",
+        "about.opmode": "Режим роботи", "about.api": "API-хук", "about.hub": "Версія хаба",
+        "about.author": "Автор", "about.sec_about": "ПРО ПРОГРАМУ", "about.repo": "Репозиторій GitHub", "about.license": "Ліцензія: GPL-3.0", "about.disclaimer": "Не пов’язано з Logitech. Усі торгові марки належать їхнім власникам.", "about.power_active": "{0} / Активно",
+        "about.power_standby": "Очікування / Відключено",
+        "about.opmode_active": "Нативний розширений режим (розблоковано)",
+        "about.opmode_idle": "Очікування пристрою",
+        "about.tray": "Згортати в трей",
+        "about.tray_h": "Якщо увімкнено, кнопка згортання ховає програму в системний трей (область прихованих значків).",
+        "tray.show": "Показати", "tray.quit": "Вийти",
+        "apply.ok_title": "Застосовано", "apply.ok_body": "Налаштування застосовано до керма.",
+        "ui.presets": "ПРЕСЕТИ", "ui.presets_sub": "Виберіть перед запуском гри.",
+        "ui.add_profile": "+  Додати профіль гри", "ui.autoload": "Авто-завантаження при підключенні",
+        "ui.telemetry": "ТЕЛЕМЕТРІЯ В РЕАЛЬНОМУ ЧАСІ", "ui.center": "Центрувати",
+        "ui.apply": "ЗАСТОСУВАТИ", "conn.connected": "Підключено", "conn.test": "Тестовий режим",
+        "tab.wheel": "НАЛАШТУВАННЯ КЕРМА", "tab.ffb": "ТЕСТ FFB", "tab.input": "МОНІТОР ВВОДУ",
+        "tab.lut": "LUT",
+        "lut.sec": "ПОСТ-ОБРОБКА FFB", "lut.enable": "Увімкнути пост-обробку FFB",
+        "lut.enable_h": "Пропускає зворотний зв’язок гри через обрану криву LUT в усіх іграх (через проксі dinput8).",
+        "lut.select": "Крива LUT", "lut.import": "Імпортувати LUT", "lut.delete": "Видалити LUT", "lut.none": "(немає)",
+        "lut.del_title": "Видалення LUT", "lut.del_body": "Видалити файл LUT “{}” з диска? Це неможливо скасувати.",
+        "lut.deleted": "LUT видалено",
+        "lut.empty": "Файлів LUT ще немає. Натисніть “Імпортувати LUT”, щоб додати.",
+        "lut.warn": "⚠  Не використовуйте в онлайн-іграх. Якщо використовуєте — на власний ризик!",
+        "lut.global_notice": "LUT налаштовується окремо для кожної гри. Створіть профіль гри (＋ у Пресетах), виберіть її .exe, потім оберіть тут LUT. Глобальний профіль LUT не застосовує.",
+        "lut.axis_in": "Вхід", "lut.axis_out": "Вихід",
+        "lut.imported": "LUT імпортовано", "lut.import_fail": "Не вдалося імпортувати LUT",
+        "lut.game": "ГРА", "lut.exe": "Виконуваний файл гри", "lut.exe_pick": "Вибрати…",
+        "lut.exe_none": "Гру не вибрано",
+        "prof.edit": "Редагувати профіль", "prof.exe": "Виконуваний файл гри",
+        "prof.exe_hint": "Для ігор на UE лаунчері виберіть справжній ...-Shipping.exe, якщо його не знайдено автоматично.",
+        "prof.logo": "Значок (з .exe)", "prof.logo_pick": "Вибрати значок…",
+        "prof.exe_pick": "Вибрати гру…", "prof.name_lbl": "Назва профілю",
+        "proxy.installed": "Проксі встановлено", "proxy.removed": "Проксі видалено",
+        "proxy.installed_body": "dinput8.dll розміщено поруч із грою.",
+        "proxy.locked": "Проксі вимкнено", "proxy.locked_body": "Буде видалено після закриття гри.",
+        "proxy.removed_body": "dinput8.dll видалено з папки гри.",
+        "proxy.err_noexe": "Виконуваний файл гри не знайдено.", "proxy.err_arch": "Непідтримувана архітектура.",
+        "proxy.err_asset": "Відсутній вбудований файл проксі (assets/proxy).",
+        "proxy.err_write": "Не вдалося записати DLL (гра запущена? папка доступна для запису?).",
+        "proxy.foreign_title": "Існуючий dinput8.dll",
+        "proxy.foreign_body": "У цій папці вже є dinput8.dll, встановлений не цією програмою (інший мод/обгортка). Перезаписати його?",
+        "tab.info": "ІНФО", "wheel.sec_ffb": "ЗВОРОТНИЙ ЗВ’ЯЗОК", "wheel.sec_steer": "НАЛАШТУВАННЯ КЕРМА",
+        "ffb.reset": "Скинути FFB драйвера", "ffb.reset_h": "Видаляє всі значення реєстру FFB, записані цією програмою.",
+        "set.title": "НАЛАШТУВАННЯ", "set.appearance": "ЗОВНІШНІЙ ВИГЛЯД", "set.general": "ЗАГАЛЬНІ", "set.testing": "ТЕСТУВАННЯ",
+        "set.theme": "Тема", "set.language": "Мова", "set.tray": "Згортати в системний трей",
+        "set.tray_h": "Якщо увімкнено, кнопка згортання ховає програму в системний трей (область прихованих значків).",
+        "set.devmode": "Режим визначення пристрою",
+        "set.devmode_h": "Примусово встановлює розкладку керма без обладнання. “Авто” використовує реальне визначення.", "set.ui_scale": "Масштаб інтерфейсу", "set.ui_scale_h": "Збільшує весь інтерфейс на екранах високої роздільної здатності (1440p/4K). Набуває чинності після перезапуску програми.", "set.restart_hint": "Перезапустіть програму, щоб застосувати новий масштаб.",
+        "info.opmode_active": "Нативний розширений режим (розблоковано)", "info.opmode_idle": "Очікування / Відключено",
+        "info.active": "Активно", "info.standby": "Очікування",
+    },
+    "ru": {
+        "nav.home": "Главная", "nav.wheel": "Настройки руля", "nav.ffb": "Тест FFB",
+        "nav.input": "Монитор ввода", "nav.apply": "Применить настройки",
+        "nav.theme": "Сменить тему", "nav.about": "О программе",
+        "conn.connecting": "Подключение…", "conn.not_connected": "Не подключено",
+        "home.title": "Телеметрия в реальном времени", "home.steering": "УГОЛ ПОВОРОТА",
+        "home.clutch": "СЦЕПЛЕНИЕ", "home.brake": "ТОРМОЗ", "home.throttle": "ГАЗ",
+        "home.center": "Центрировать руль", "home.na": "Н/Д",
+        "prof.label": "ПРОФИЛЬ", "prof.auto": "Автозагрузка", "prof.add": "Новый профиль",
+        "prof.dup": "Дублировать профиль", "prof.ren": "Переименовать профиль",
+        "prof.del": "Удалить профиль", "prof.new_title": "Новый профиль",
+        "prof.new_hint": "Название профиля", "prof.ren_title": "Переименование профиля",
+        "prof.del_title": "Удаление профиля", "prof.del_msg": "Удалить профиль “{0}”? Это действие нельзя отменить.",
+        "ffb.reset_ok": "FFB драйвера сброшен", "ffb.reset_ok_body": "Все значения реестра FFB, записанные этой программой, удалены.",
+        "prof.name_taken": "Имя уже используется", "prof.name_taken_body": "Профиль с именем “{0}” уже существует, поэтому имя оставлено без изменений.",
+        "input.mode_numbers": "Показывать номера кнопок", "input.mode_names": "Показывать названия кнопок",
+        "ui.autogame": "Автопереключение по игре", "ui.autogame_h": "Применяет профиль, чей .exe игры запущен. Если ни один не запущен — используется Глобальный.", "game.detected": "Игра обнаружена", "game.detected_body": "Применён пресет {0}.",
+        "set.startup": "Запускать вместе с Windows", "set.startup_h": "Запускает программу при входе в систему. По умолчанию выключено.",
+        "set.updates_sec": "ОБНОВЛЕНИЯ", "set.updates": "Проверять обновления при запуске", "set.updates_h": "Проверяет GitHub раз в день. Ничего не устанавливается автоматически.",
+        "set.check_now": "Проверить сейчас", "set.checking": "Проверка…",
+        "upd.available": "Доступно обновление", "upd.available_body": "Доступна версия {0}.", "upd.open": "Скачать",
+        "upd.current": "Установлена последняя версия", "upd.current_body": "У вас самая новая версия.",
+        "upd.failed": "Не удалось проверить обновления", "upd.failed_body": "Не удалось связаться с GitHub. Проверьте подключение и попробуйте снова.",
+        "prof.copy_suffix": " Копия", "dlg.ok": "ОК", "dlg.cancel": "Отмена", "dlg.delete": "Удалить",
+        "wheel.title": "Настройки руля", "wheel.ffb": "Обратная связь (FFB)",
+        "wheel.overall": "Общая сила эффектов",
+        "wheel.overall_h": "Установите 101%, чтобы убрать мёртвую зону FFB в центре в большинстве игр. (Требуется перезапуск игры)",
+        "wheel.spring": "Эффект пружины", "wheel.spring_h": "Пружина на уровне драйвера (рекомендуется: 0%).",
+        "wheel.damper": "Эффект демпфера", "wheel.damper_h": "Демпфирование на уровне драйвера (рекомендуется: 0%).",
+        "wheel.center_cb": "Включить пружину центрирования в играх с FFB",
+        "wheel.center": "Пружина центрирования", "wheel.center_h": "Сила автоцентрирования на уровне драйвера.",
+        "wheel.ramp": "Нарастание центрирования", "wheel.ramp_h": "Формирует только пружину центрирования — не действует, пока она равна 0. По умолчанию 7.",
+        "wheel.steering": "Руль", "wheel.rotation": "Диапазон поворота",
+        "wheel.rotation_h": "Максимальный угол поворота руля.",
+        "ffb.title": "ТЕСТ ОБРАТНОЙ СВЯЗИ",
+        "ffb.subtitle": "Проверьте мотор FFB напрямую. Лучше делать это, когда ни одна игра не использует руль.",
+        "ffb.strength": "Сила теста", "ffb.strength_h": "Сила, используемая в тестах Push, Spring и Sweep.",
+        "ffb.push_l": "Толкнуть влево", "ffb.push_r": "Толкнуть вправо",
+        "ffb.spring": "Пружина (центр)", "ffb.spring_stop": "Остановить пружину",
+        "ffb.sweep": "Автоцикл", "ffb.sweep_stop": "Остановить цикл",
+        "ffb.advanced": "РАСШИРЕННЫЕ ТЕСТЫ МОТОРА",
+        "ffb.pulse_l": "Импульс влево", "ffb.pulse_r": "Импульс вправо",
+        "ffb.vibe_light": "Лёгкая вибрация", "ffb.vibe_med": "Средняя вибрация",
+        "ffb.vibe_fast": "Быстрое дребезжание", "ffb.vibe_heavy": "Сильная вибрация",
+        "ffb.stop": "ОСТАНОВИТЬ ВСЕ СИЛЫ",
+        "input.title": "Монитор ввода", "input.led": "Тест приветствия LED",
+        "input.wheel": "РУЛЬ", "input.shifter": "БЛОК ПЕРЕКЛЮЧЕНИЯ ПЕРЕДАЧ", "input.gear": "ПЕРЕДАЧА (H-СХЕМА)",
+        "input.lpad": "ЛЕВЫЙ ПОДРУЛЕВОЙ ПЕРЕКЛЮЧАТЕЛЬ", "input.rpad": "ПРАВЫЙ ПОДРУЛЕВОЙ ПЕРЕКЛЮЧАТЕЛЬ",
+        "input.face": "ОСНОВНЫЕ КНОПКИ", "input.dpad": "КРЕСТОВИНА", "input.horn": "СИГНАЛ",
+        "input.led_nc": "Руль не подключён.",
+        "input.led_g27": "Тест LED доступен только для G27 (у DFGT нет LED оборотов).",
+        "input.led_run": "Приветствие LED… (работает, если драйвер передаёт этот отчёт)",
+        "about.title": "Информация об устройстве", "about.settings": "Настройки",
+        "about.status": "Статус", "about.connected": "Подключено", "about.not_connected": "Не подключено",
+        "about.model": "Модель", "about.hwid": "Аппаратный ID", "about.axis": "Разрешение осей",
+        "about.ffb": "Обратная связь", "about.language": "Язык", "about.theme": "Тема",
+        "about.theme_dark": "Тёмная", "about.theme_light": "Светлая",
+        "about.testmode": "Режим тестового устройства", "about.testmode_h":
+            "Переключает раскладку активного руля без подключённого оборудования. “Авто” использует реальное определение.",
+        "about.test_auto": "Авто (определение)", "about.footer":
+            "Legacy Logitech Wheels - Control Hub (PySide6 / Fluent)",
+        "about.sec_hw": "ДИАГНОСТИКА ОБОРУДОВАНИЯ", "about.sec_sensor": "ХАРАКТЕРИСТИКИ ДАТЧИКОВ И FFB",
+        "about.sec_sw": "СОСТОЯНИЕ ПО И ДРАЙВЕРА", "about.sec_credits": "БЛАГОДАРНОСТИ",
+        "about.devmodel": "Модель устройства", "about.interface": "Интерфейс", "about.power": "Состояние питания",
+        "about.tracking": "Система слежения", "about.polling": "Макс. частота опроса",
+        "about.opmode": "Режим работы", "about.api": "API-хук", "about.hub": "Версия хаба",
+        "about.author": "Автор", "about.sec_about": "О ПРОГРАММЕ", "about.repo": "Репозиторий GitHub", "about.license": "Лицензия: GPL-3.0", "about.disclaimer": "Не связано с Logitech. Все товарные знаки принадлежат их владельцам.", "about.power_active": "{0} / Активно",
+        "about.power_standby": "Ожидание / Отключено",
+        "about.opmode_active": "Нативный расширенный режим (разблокирован)",
+        "about.opmode_idle": "Ожидание устройства",
+        "about.tray": "Сворачивать в трей",
+        "about.tray_h": "Если включено, кнопка сворачивания прячет программу в системный трей (область скрытых значков).",
+        "tray.show": "Показать", "tray.quit": "Выход",
+        "apply.ok_title": "Применено", "apply.ok_body": "Настройки применены к рулю.",
+        "ui.presets": "ПРЕСЕТЫ", "ui.presets_sub": "Выберите перед запуском игры.",
+        "ui.add_profile": "+  Добавить профиль игры", "ui.autoload": "Автозагрузка при подключении",
+        "ui.telemetry": "ТЕЛЕМЕТРИЯ В РЕАЛЬНОМ ВРЕМЕНИ", "ui.center": "Центрировать",
+        "ui.apply": "ПРИМЕНИТЬ", "conn.connected": "Подключено", "conn.test": "Тестовый режим",
+        "tab.wheel": "НАСТРОЙКИ РУЛЯ", "tab.ffb": "ТЕСТ FFB", "tab.input": "МОНИТОР ВВОДА",
+        "tab.lut": "LUT",
+        "lut.sec": "ПОСТ-ОБРАБОТКА FFB", "lut.enable": "Включить пост-обработку FFB",
+        "lut.enable_h": "Пропускает обратную связь игры через выбранную кривую LUT во всех играх (через прокси dinput8).",
+        "lut.select": "Кривая LUT", "lut.import": "Импортировать LUT", "lut.delete": "Удалить LUT", "lut.none": "(нет)",
+        "lut.del_title": "Удаление LUT", "lut.del_body": "Удалить файл LUT “{}” с диска? Это действие нельзя отменить.",
+        "lut.deleted": "LUT удалён",
+        "lut.empty": "Файлов LUT пока нет. Нажмите “Импортировать LUT”, чтобы добавить.",
+        "lut.warn": "⚠  Не используйте в онлайн-играх. Если используете — на свой риск!",
+        "lut.global_notice": "LUT настраивается отдельно для каждой игры. Создайте профиль игры (＋ в Пресетах), выберите её .exe, затем выберите здесь LUT. Глобальный профиль LUT не применяет.",
+        "lut.axis_in": "Вход", "lut.axis_out": "Выход",
+        "lut.imported": "LUT импортирован", "lut.import_fail": "Не удалось импортировать LUT",
+        "lut.game": "ИГРА", "lut.exe": "Исполняемый файл игры", "lut.exe_pick": "Выбрать…",
+        "lut.exe_none": "Игра не выбрана",
+        "prof.edit": "Редактировать профиль", "prof.exe": "Исполняемый файл игры",
+        "prof.exe_hint": "Для игр на лаунчере UE выберите настоящий ...-Shipping.exe, если он не найден автоматически.",
+        "prof.logo": "Значок (из .exe)", "prof.logo_pick": "Выбрать значок…",
+        "prof.exe_pick": "Выбрать игру…", "prof.name_lbl": "Название профиля",
+        "proxy.installed": "Прокси установлен", "proxy.removed": "Прокси удалён",
+        "proxy.installed_body": "dinput8.dll размещён рядом с игрой.",
+        "proxy.locked": "Прокси отключён", "proxy.locked_body": "Будет удалён после закрытия игры.",
+        "proxy.removed_body": "dinput8.dll удалён из папки игры.",
+        "proxy.err_noexe": "Исполняемый файл игры не найден.", "proxy.err_arch": "Неподдерживаемая архитектура.",
+        "proxy.err_asset": "Отсутствует встроенный файл прокси (assets/proxy).",
+        "proxy.err_write": "Не удалось записать DLL (игра запущена? папка доступна для записи?).",
+        "proxy.foreign_title": "Существующий dinput8.dll",
+        "proxy.foreign_body": "В этой папке уже есть dinput8.dll, установленный не этой программой (другой мод/обёртка). Перезаписать его?",
+        "tab.info": "ИНФО", "wheel.sec_ffb": "ОБРАТНАЯ СВЯЗЬ", "wheel.sec_steer": "НАСТРОЙКИ РУЛЯ",
+        "ffb.reset": "Сбросить FFB драйвера", "ffb.reset_h": "Удаляет все значения реестра FFB, записанные этой программой.",
+        "set.title": "НАСТРОЙКИ", "set.appearance": "ВНЕШНИЙ ВИД", "set.general": "ОБЩИЕ", "set.testing": "ТЕСТИРОВАНИЕ",
+        "set.theme": "Тема", "set.language": "Язык", "set.tray": "Сворачивать в системный трей",
+        "set.tray_h": "Если включено, кнопка сворачивания прячет программу в системный трей (область скрытых значков).",
+        "set.devmode": "Режим определения устройства",
+        "set.devmode_h": "Принудительно задаёт раскладку руля без оборудования. “Авто” использует реальное определение.", "set.ui_scale": "Масштаб интерфейса", "set.ui_scale_h": "Увеличивает весь интерфейс на экранах высокого разрешения (1440p/4K). Вступает в силу после перезапуска программы.", "set.restart_hint": "Перезапустите программу, чтобы применить новый масштаб.",
+        "info.opmode_active": "Нативный расширенный режим (разблокирован)", "info.opmode_idle": "Ожидание / Отключено",
+        "info.active": "Активно", "info.standby": "Ожидание",
+    },
 }
-LANG_ORDER = [("tr", "Türkçe"), ("en", "English"), ("de", "Deutsch")]
+LANG_ORDER = [("tr", "Türkçe"), ("en", "English"), ("de", "Deutsch"), ("uk", "Українська"), ("ru", "Русский")]
 CURRENT_LANG = "en"
 
 
@@ -1297,6 +1543,8 @@ def _detect_profile():
         return DEVICE_PROFILES["DFGT"], DEVICE_PROFILES["DFGT"]["pid_native"]
     if DEVICE_PROFILES["G27"]["pid_native"] in pids:
         return DEVICE_PROFILES["G27"], DEVICE_PROFILES["G27"]["pid_native"]
+    if DEVICE_PROFILES["G25"]["pid_native"] in pids:
+        return DEVICE_PROFILES["G25"], DEVICE_PROFILES["G25"]["pid_native"]
     if PID_COMPAT in pids:
         return DEVICE_PROFILES["DFGT"], PID_COMPAT
     return None, None
@@ -1341,14 +1589,20 @@ def ensure_native_mode():
         present = [d["product_id"] for d in devs]
         if DEVICE_PROFILES["DFGT"]["pid_native"] in present: return
         if DEVICE_PROFILES["G27"]["pid_native"] in present: return
+        if DEVICE_PROFILES["G25"]["pid_native"] in present: return
         if PID_COMPAT not in present: return
         # In compat mode we don't know which wheel this is; use the reported
-        # product name as a hint, then try the other one as a fallback.
+        # product name as a hint, then try the others as a fallback.
         name = ""
         for d in devs:
             if d["product_id"] == PID_COMPAT:
                 name = (d.get("product_string") or "").lower(); break
-        order = ["DFGT", "G27"] if "gt" in name else ["G27", "DFGT"]
+        if "gt" in name:
+            order = ["DFGT", "G27", "G25"]
+        elif "g25" in name:
+            order = ["G25", "G27", "DFGT"]
+        else:
+            order = ["G27", "G25", "DFGT"]
         for key in order:
             try:
                 _switch_mode(NATIVE_MODE_BYTE[key])
@@ -1509,7 +1763,7 @@ def decode_buttons_g27(raw):
 
 
 def decode_buttons(raw):
-    if active_profile is DEVICE_PROFILES["G27"]:
+    if active_profile in G27_LIKE_PROFILES:
         return decode_buttons_g27(raw)
     return decode_buttons_dfgt(raw)
 
@@ -1748,7 +2002,7 @@ class InputMonitor(QWidget):
 
     def _num(self, key):
         """HID button number for `key` on the active wheel, or None."""
-        prof = "G27" if active_profile is DEVICE_PROFILES["G27"] else "DFGT"
+        prof = "G27" if active_profile in G27_LIKE_PROFILES else "DFGT"
         return HID_BUTTON_NUMBERS.get(prof, {}).get(key)
 
     def _lbl(self, key, default):
@@ -1883,15 +2137,23 @@ class InputMonitor(QWidget):
             p.drawText(QRectF(rx + 12, cy - 8, 22, 16), Qt.AlignLeft | Qt.AlignVCenter, rgt)
 
     def _paint_g27(self, p, P, chan):
+        # G25 shares this diagram with G27, but physically has only the top
+        # back-of-wheel button per side (L1/R1), not the extra L2/L3/R2/R3 -
+        # those are a G27-only addition, so only that row is skipped here.
+        g25 = active_profile is DEVICE_PROFILES["G25"]
         D = 38
         self._section(p, 20, 8, tr("input.wheel"))
         self._pill(p, 52, 30, 176, 26, self._lbl("paddle_left", tr("input.lpad")), "paddle_left" in P)
         self._pill(p, 332, 30, 176, 26, self._lbl("paddle_right", tr("input.rpad")), "paddle_right" in P)
         lcx, rcx = 137, 423
-        for i, k in enumerate(("wheel_lt", "wheel_lm", "wheel_lb")):
-            self._key(p, lcx - D / 2, 72 + i * 46, D, D, self._lbl(k, ["L1", "L2", "L3"][i]), k in P, circle=True)
-        for i, k in enumerate(("wheel_rt", "wheel_rm", "wheel_rb")):
-            self._key(p, rcx - D / 2, 72 + i * 46, D, D, self._lbl(k, ["R1", "R2", "R3"][i]), k in P, circle=True)
+        left_keys = ("wheel_lt",) if g25 else ("wheel_lt", "wheel_lm", "wheel_lb")
+        right_keys = ("wheel_rt",) if g25 else ("wheel_rt", "wheel_rm", "wheel_rb")
+        left_labels = ["L1"] if g25 else ["L1", "L2", "L3"]
+        right_labels = ["R1"] if g25 else ["R1", "R2", "R3"]
+        for i, k in enumerate(left_keys):
+            self._key(p, lcx - D / 2, 72 + i * 46, D, D, self._lbl(k, left_labels[i]), k in P, circle=True)
+        for i, k in enumerate(right_keys):
+            self._key(p, rcx - D / 2, 72 + i * 46, D, D, self._lbl(k, right_labels[i]), k in P, circle=True)
         p.setPen(QPen(chan, 1)); p.drawLine(QPointF(30, 226), QPointF(530, 226))
         self._section(p, 20, 240, tr("input.shifter"))
         # face + d-pad clusters centred symmetrically over the 1-2-3-4 row
@@ -1944,7 +2206,7 @@ class InputMonitor(QWidget):
         p = QPainter(self); p.setRenderHint(QPainter.Antialiasing)
         P = self.pressed
         chan = theme_col("#393939", "#d0d0d0")
-        if active_profile is DEVICE_PROFILES["G27"]:
+        if active_profile in G27_LIKE_PROFILES:
             self._paint_g27(p, P, chan)
         else:
             self._paint_dfgt(p, P, chan)

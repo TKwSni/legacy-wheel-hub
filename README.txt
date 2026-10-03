@@ -1,7 +1,7 @@
 ==============================================================
   Legacy Wheel Hub  v1.1.5
   A free control panel for legacy Logitech force-feedback wheels
-  (Driving Force GT and G27).
+  (Driving Force GT, G25 and G27).
 ==============================================================
 
 -------------------------------------------------------------
@@ -39,7 +39,7 @@ Legacy Wheel Hub and plug in your wheel.
 -------------------------------------------------------------
  GLOBAL LUT (FFB post-processing)
 -------------------------------------------------------------
-Gear-driven wheels (G27/DFGT) have a force-feedback deadzone near
+Gear-driven wheels (G25/G27/DFGT) have a force-feedback deadzone near
 center. A LUT curve remaps the game's force so small inputs are felt,
 for a more linear response - even in games without built-in LUT support.
 
@@ -72,7 +72,7 @@ v3.0 (GPL-3.0). See the project page for the full license text.
  DISCLAIMER
 -------------------------------------------------------------
 This project is NOT affiliated with, endorsed by, or sponsored by
-Logitech. "Logitech", "Driving Force" and "G27" are trademarks of
+Logitech. "Logitech", "Driving Force", "G25" and "G27" are trademarks of
 Logitech, used here only to indicate hardware compatibility. The
 app communicates with the wheel through standard USB HID and the
 Logitech driver's registry settings for interoperability; no
