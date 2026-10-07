@@ -1,0 +1,28 @@
+name: Compilar dinput8-proxy
+
+on:
+  push:
+    branches: [ "add-g25-support" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Obtener código fuente
+      uses: actions/checkout@v4
+
+    - name: Configurar MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Compilar dinput8.dll
+      run: |
+        cd dinput8-proxy/src
+        cl.exe /O2 /LD /EHsc dllmain.cpp /link /DEF:dinput8.def /OUT:dinput8.dll
+
+    - name: Subir artefacto compilado
+      uses: actions/upload-artifact@v4
+      with:
+        name: dinput8-dll
+        path: dinput8-proxy/src/dinput8.dll
