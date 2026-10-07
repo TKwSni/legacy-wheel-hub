@@ -13,10 +13,13 @@ jobs:
     - name: Obtener código fuente
       uses: actions/checkout@v4
 
-    - name: Configurar MSBuild
-      uses: microsoft/setup-msbuild@v2
+    - name: Configurar entorno MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
 
     - name: Compilar dinput8.dll
+      shell: cmd
       run: |
         cd dinput8-proxy/src
         cl.exe /O2 /LD /EHsc dllmain.cpp /link /DEF:dinput8.def /OUT:dinput8.dll
