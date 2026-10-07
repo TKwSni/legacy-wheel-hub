@@ -162,7 +162,6 @@ jobs:
         run: |
           $required = @(
             "dist\LegacyWheelHub\LegacyWheelHub.exe",
-            "dist\LegacyWheelHub\wheel.png",
             "dist\LegacyWheelHub\assets\proxy\x64\dinput8.dll",
             "dist\LegacyWheelHub\assets\proxy\x86\dinput8.dll"
           )
@@ -172,6 +171,22 @@ jobs:
               throw "Falta en el paquete final: $file"
             }
             Write-Host "OK: $file"
+          }
+
+          # PyInstaller 6 (onedir) coloca los datos en _internal.
+          # LegacyWheelHub.py busca wheel.png tanto junto al EXE como
+          # en sys._MEIPASS, por lo que ambas ubicaciones son válidas.
+          $wheelRoot = "dist\LegacyWheelHub\wheel.png"
+          $wheelInternal = "dist\LegacyWheelHub\_internal\wheel.png"
+
+          if (Test-Path $wheelRoot) {
+            Write-Host "OK: $wheelRoot"
+          }
+          elseif (Test-Path $wheelInternal) {
+            Write-Host "OK: $wheelInternal"
+          }
+          else {
+            throw "No se encontró wheel.png ni en el directorio del EXE ni en _internal"
           }
 
           Write-Host ""
