@@ -160,34 +160,58 @@ jobs:
       - name: Verificar paquete generado
         shell: pwsh
         run: |
-          $required = @(
-            "dist\LegacyWheelHub\LegacyWheelHub.exe",
-            "dist\LegacyWheelHub\assets\proxy\x64\dinput8.dll",
-            "dist\LegacyWheelHub\assets\proxy\x86\dinput8.dll"
+          $exe = "dist\LegacyWheelHub\LegacyWheelHub.exe"
+
+          if (!(Test-Path $exe)) {
+            throw "Falta en el paquete final: $exe"
+          }
+          Write-Host "OK: $exe"
+
+          # PyInstaller 6 (onedir) normalmente coloca --add-data
+          # dentro de _internal. Aceptamos ambas estructuras:
+          #   dist\LegacyWheelHub\assets\...
+          #   dist\LegacyWheelHub\_internal\assets\...
+          $proxyCandidates = @(
+            "dist\LegacyWheelHub\assets\proxy",
+            "dist\LegacyWheelHub\_internal\assets\proxy"
           )
 
-          foreach ($file in $required) {
-            if (!(Test-Path $file)) {
-              throw "Falta en el paquete final: $file"
+          $proxyDir = $null
+          foreach ($candidate in $proxyCandidates) {
+            if ((Test-Path "$candidate\x64\dinput8.dll") -and
+                (Test-Path "$candidate\x86\dinput8.dll")) {
+              $proxyDir = $candidate
+              break
             }
-            Write-Host "OK: $file"
           }
 
-          # PyInstaller 6 (onedir) coloca los datos en _internal.
-          # LegacyWheelHub.py busca wheel.png tanto junto al EXE como
-          # en sys._MEIPASS, por lo que ambas ubicaciones son válidas.
-          $wheelRoot = "dist\LegacyWheelHub\wheel.png"
-          $wheelInternal = "dist\LegacyWheelHub\_internal\wheel.png"
+          if ($null -eq $proxyDir) {
+            throw "No se encontraron los proxies x64/x86 en assets ni en _internal\assets"
+          }
 
-          if (Test-Path $wheelRoot) {
-            Write-Host "OK: $wheelRoot"
+          Write-Host "OK: proxies encontrados en $proxyDir"
+          Write-Host "OK: $proxyDir\x64\dinput8.dll"
+          Write-Host "OK: $proxyDir\x86\dinput8.dll"
+
+          # PyInstaller 6 también puede colocar wheel.png en _internal.
+          $wheelCandidates = @(
+            "dist\LegacyWheelHub\wheel.png",
+            "dist\LegacyWheelHub\_internal\wheel.png"
+          )
+
+          $wheelFound = $null
+          foreach ($candidate in $wheelCandidates) {
+            if (Test-Path $candidate) {
+              $wheelFound = $candidate
+              break
+            }
           }
-          elseif (Test-Path $wheelInternal) {
-            Write-Host "OK: $wheelInternal"
-          }
-          else {
+
+          if ($null -eq $wheelFound) {
             throw "No se encontró wheel.png ni en el directorio del EXE ni en _internal"
           }
+
+          Write-Host "OK: $wheelFound"
 
           Write-Host ""
           Write-Host "Contenido del paquete:"
