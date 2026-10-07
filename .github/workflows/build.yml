@@ -22,7 +22,7 @@ jobs:
       shell: cmd
       run: |
         cd dinput8-proxy/src
-        cl.exe /O2 /LD /EHsc dllmain.cpp /link /DEF:dinput8.def /OUT:dinput8.dll
+        cl.exe /O2 /LD /EHsc /std:c++17 dllmain.cpp /link /DEF:dinput8.def /OUT:dinput8.dll
 
     - name: Subir artefacto compilado
       uses: actions/upload-artifact@v4
