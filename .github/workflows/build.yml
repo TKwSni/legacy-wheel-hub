@@ -38,9 +38,9 @@ jobs:
       run: |
         copy dinput8-proxy\src\dinput8.dll .
 
-    - name: Generar ejecutable con PyInstaller
+    - name: Generar ejecutable con PyInstaller (Con consola para depurar)
       run: |
-        pyinstaller --onedir --noconsole --icon=wheel.ico --add-binary "dinput8.dll;." --add-data "wheel.png;." LegacyWheelHub.py
+        pyinstaller --onedir --console --icon=wheel.ico --collect-all pyside6 --collect-all qfluentwidgets --collect-all qframelesswindow --add-binary "dinput8.dll;." --add-data "wheel.png;." LegacyWheelHub.py
 
     - name: Subir paquete completo como Artefacto
       uses: actions/upload-artifact@v4
