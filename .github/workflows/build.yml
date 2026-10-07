@@ -28,14 +28,13 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-        cache: 'pip'
 
     - name: Instalar dependencias del proyecto
       run: |
         python -m pip install --upgrade pip
         pip install pyinstaller pyside6 pyside6_fluent_widgets pysidesix_frameless_window pywin32 hid
 
-    - name: Copilar dinput8.dll al directorio raíz
+    - name: Copiar dinput8.dll al directorio raíz
       run: |
         copy dinput8-proxy\src\dinput8.dll .
 
