@@ -1,4 +1,4 @@
-name: Compilar dinput8-proxy
+name: Compilar y Empaquetar Legacy Wheel Hub
 
 on:
   push:
@@ -24,8 +24,27 @@ jobs:
         cd dinput8-proxy/src
         cl.exe /O2 /LD /EHsc /std:c++17 dllmain.cpp /link user32.lib advapi32.lib dinput8.lib dxguid.lib /DEF:dinput8.def /OUT:dinput8.dll
 
-    - name: Subir artefacto compilado
+    - name: Instalar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Instalar dependencias del proyecto
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller pyside6 pyside6_fluent_widgets pysidesix_frameless_window pywin32 hid
+
+    - name: Copilar dinput8.dll al directorio raíz
+      run: |
+        copy dinput8-proxy\src\dinput8.dll .
+
+    - name: Generar ejecutable con PyInstaller
+      run: |
+        pyinstaller --onedir --noconsole --icon=wheel.ico --add-binary "dinput8.dll;." --add-data "wheel.png;." LegacyWheelHub.py
+
+    - name: Subir paquete completo como Artefacto
       uses: actions/upload-artifact@v4
       with:
-        name: dinput8-dll
-        path: dinput8-proxy/src/dinput8.dll
+        name: LegacyWheelHub-G25-Release
+        path: dist/LegacyWheelHub/
