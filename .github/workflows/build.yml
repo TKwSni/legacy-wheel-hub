@@ -1,49 +1,192 @@
-name: Compilar y Empaquetar Legacy Wheel Hub
+name: Build Legacy Wheel Hub
 
 on:
   push:
-    branches: [ "add-g25-support" ]
+    branches:
+      - "add-g25-support"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
+    name: Windows build
     runs-on: windows-latest
 
     steps:
-    - name: Obtener código fuente
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Configurar entorno MSVC
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x64
+      # ------------------------------------------------------------
+      # Build the native dinput8 proxy twice:
+      #   x86 -> assets/proxy/x86/dinput8.dll
+      #   x64 -> assets/proxy/x64/dinput8.dll
+      #
+      # LegacyWheelHub.py selects the correct proxy from the game's
+      # PE architecture at runtime.
+      # ------------------------------------------------------------
+      - name: Setup MSVC x64
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
-    - name: Compilar dinput8.dll
-      shell: cmd
-      run: |
-        cd dinput8-proxy/src
-        cl.exe /O2 /LD /EHsc /std:c++17 dllmain.cpp /link user32.lib advapi32.lib dinput8.lib dxguid.lib /DEF:dinput8.def /OUT:dinput8.dll
+      - name: Build dinput8 proxy (x64)
+        shell: cmd
+        run: |
+          if not exist assets\proxy\x64 mkdir assets\proxy\x64
+          cd dinput8-proxy\src
+          cl.exe /nologo /O2 /LD /EHsc /std:c++17 /MD ^
+            dllmain.cpp ^
+            /link /DEF:dinput8.def ^
+            user32.lib advapi32.lib dinput8.lib dxguid.lib ^
+            /OUT:..\..\assets\proxy\x64\dinput8.dll
 
-    - name: Instalar Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Setup MSVC x86
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
 
-    - name: Instalar dependencias del proyecto
-      run: |
-        python -m pip install --upgrade pip
-        pip install pyinstaller pyside6 pyside6_fluent_widgets pysidesix_frameless_window pywin32 hid
+      - name: Build dinput8 proxy (x86)
+        shell: cmd
+        run: |
+          if not exist assets\proxy\x86 mkdir assets\proxy\x86
+          cd dinput8-proxy\src
+          cl.exe /nologo /O2 /LD /EHsc /std:c++17 /MD ^
+            dllmain.cpp ^
+            /link /DEF:dinput8.def ^
+            user32.lib advapi32.lib dinput8.lib dxguid.lib ^
+            /OUT:..\..\assets\proxy\x86\dinput8.dll
 
-    - name: Copiar dinput8.dll al directorio raíz
-      run: |
-        copy dinput8-proxy\src\dinput8.dll .
+      - name: Verify native proxy outputs
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
 
-    - name: Generar ejecutable con PyInstaller (Con consola para depurar)
-      run: |
-        pyinstaller --onedir --console --icon=wheel.ico --collect-all pyside6 --collect-all qfluentwidgets --collect-all qframelesswindow --add-binary "dinput8.dll;." --add-data "wheel.png;." LegacyWheelHub.py
+          $x86 = "assets\proxy\x86\dinput8.dll"
+          $x64 = "assets\proxy\x64\dinput8.dll"
 
-    - name: Subir paquete completo como Artefacto
-      uses: actions/upload-artifact@v4
-      with:
-        name: LegacyWheelHub-G25-Release
-        path: dist/LegacyWheelHub/
+          if (!(Test-Path $x86)) { throw "Missing x86 proxy: $x86" }
+          if (!(Test-Path $x64)) { throw "Missing x64 proxy: $x64" }
+
+          Write-Host "x86 proxy:"
+          Get-Item $x86 | Select-Object FullName, Length
+
+          Write-Host "x64 proxy:"
+          Get-Item $x64 | Select-Object FullName, Length
+
+      # ------------------------------------------------------------
+      # Python application
+      # ------------------------------------------------------------
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          architecture: x64
+          cache: pip
+
+      - name: Install Python dependencies
+        shell: powershell
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install `
+            pyinstaller `
+            PySide6 `
+            PySide6-Fluent-Widgets `
+            PySide6-Frameless-Window `
+            hidapi
+
+      - name: Validate Python source
+        shell: powershell
+        run: |
+          python -m py_compile LegacyWheelHub.py
+
+      - name: Verify application resources
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $required = @(
+            "LegacyWheelHub.py",
+            "wheel.ico",
+            "wheel.png",
+            "assets\proxy\x86\dinput8.dll",
+            "assets\proxy\x64\dinput8.dll"
+          )
+
+          foreach ($path in $required) {
+            if (!(Test-Path $path)) {
+              throw "Required build file is missing: $path"
+            }
+            Write-Host "OK: $path"
+          }
+
+      # ------------------------------------------------------------
+      # PyInstaller
+      #
+      # The application itself is x64 because this workflow uses the
+      # 64-bit Python runtime. The native proxy DLLs remain available
+      # in both architectures for per-game installation.
+      # ------------------------------------------------------------
+      - name: Build Legacy Wheel Hub with PyInstaller
+        shell: powershell
+        run: |
+          python -m PyInstaller `
+            --noconfirm `
+            --clean `
+            --onedir `
+            --console `
+            --name LegacyWheelHub `
+            --icon wheel.ico `
+            --collect-all qfluentwidgets `
+            --collect-all qframelesswindow `
+            --collect-all PySide6 `
+            --add-data "wheel.png;." `
+            --add-data "assets;assets" `
+            LegacyWheelHub.py
+
+      - name: Verify PyInstaller package
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $root = "dist\LegacyWheelHub"
+
+          $required = @(
+            "$root\LegacyWheelHub.exe",
+            "$root\wheel.png",
+            "$root\assets\proxy\x86\dinput8.dll",
+            "$root\assets\proxy\x64\dinput8.dll"
+          )
+
+          foreach ($path in $required) {
+            if (!(Test-Path $path)) {
+              throw "PyInstaller output is missing: $path"
+            }
+            Write-Host "OK: $path"
+          }
+
+          Write-Host ""
+          Write-Host "Final package:"
+          Get-ChildItem -Recurse $root | Select-Object FullName, Length
+
+      # ------------------------------------------------------------
+      # Produce a ZIP that can be extracted and run directly.
+      # ------------------------------------------------------------
+      - name: Package release ZIP
+        shell: powershell
+        run: |
+          Compress-Archive `
+            -Path "dist\LegacyWheelHub\*" `
+            -DestinationPath "dist\LegacyWheelHub-G25-Release.zip" `
+            -Force
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LegacyWheelHub-G25-Release
+          path: |
+            dist/LegacyWheelHub/
+            dist/LegacyWheelHub-G25-Release.zip
+          if-no-files-found: error
+          retention-days: 14
